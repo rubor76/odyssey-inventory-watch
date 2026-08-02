@@ -1,0 +1,217 @@
+from __future__ import annotations
+
+import csv
+import json
+from pathlib import Path
+from typing import Any
+
+
+CSV_FIELDS = (
+    "advertised_price",
+    "msrp",
+    "exterior",
+    "interior",
+    "dealer_name",
+    "dealer_city",
+    "availability",
+    "stock",
+    "vin",
+    "url",
+    "verified_current",
+    "first_seen",
+    "last_seen",
+    "price_label",
+    "price_notes",
+)
+
+
+def write_csv(path: str | Path, state: dict[str, Any]) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    rows = list(state.get("vehicles", {}).values())
+    rows.sort(
+        key=lambda row: (
+            not bool(row.get("verified_current")),
+            row.get("sort_price") is None,
+            row.get("sort_price") or 999_999,
+            row.get("dealer_name") or "",
+        )
+    )
+    with target.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def write_public_json(path: str | Path, state: dict[str, Any]) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def write_html(path: str | Path, state: dict[str, Any]) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(state, separators=(",", ":"), ensure_ascii=False).replace("</", "<\\/")
+    target.write_text(_html_document(payload), encoding="utf-8")
+
+
+def _html_document(payload: str) -> str:
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Washington 2026 Odyssey Elite inventory</title>
+  <style>
+    :root {{ --ink:#17212b; --muted:#637083; --line:#dbe2e8; --paper:#fff; --wash:#f3f6f8; --accent:#0b5cad; --green:#16704b; --amber:#91600a; --red:#a62d2d; }}
+    * {{ box-sizing:border-box; }}
+    body {{ margin:0; color:var(--ink); background:var(--wash); font:15px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+    main {{ max-width:1280px; margin:0 auto; padding:32px 20px 64px; }}
+    h1 {{ margin:0 0 6px; font-size:clamp(25px,4vw,38px); letter-spacing:-.03em; }}
+    h2 {{ margin:32px 0 12px; font-size:20px; }}
+    p {{ margin:6px 0; }}
+    .muted {{ color:var(--muted); }}
+    .cards {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:24px 0; }}
+    .card {{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:16px; }}
+    .card strong {{ display:block; font-size:28px; letter-spacing:-.03em; }}
+    .toolbar {{ display:flex; gap:12px; align-items:end; flex-wrap:wrap; padding:14px; background:var(--paper); border:1px solid var(--line); border-radius:12px 12px 0 0; }}
+    label {{ display:grid; gap:4px; color:var(--muted); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }}
+    input,select {{ min-height:38px; border:1px solid #b9c4ce; border-radius:7px; background:white; padding:7px 10px; color:var(--ink); font:inherit; text-transform:none; letter-spacing:0; }}
+    label.check {{ display:flex; align-items:center; flex-direction:row; gap:7px; min-height:38px; }}
+    label.check input {{ min-height:auto; }}
+    .table-wrap {{ overflow:auto; border:1px solid var(--line); border-top:0; background:var(--paper); border-radius:0 0 12px 12px; }}
+    table {{ width:100%; border-collapse:collapse; min-width:960px; }}
+    th,td {{ text-align:left; padding:12px; border-bottom:1px solid var(--line); vertical-align:top; }}
+    th {{ position:sticky; top:0; background:#eef3f6; color:#43505e; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }}
+    tr:last-child td {{ border-bottom:0; }}
+    tr.stale {{ opacity:.62; background:#faf7f0; }}
+    .price {{ font-size:18px; font-weight:800; white-space:nowrap; }}
+    .msrp {{ color:var(--muted); font-size:12px; white-space:nowrap; }}
+    .badge {{ display:inline-block; border-radius:999px; padding:2px 8px; font-size:12px; font-weight:700; background:#e8eef4; color:#334455; white-space:nowrap; }}
+    .badge.white {{ background:#fff; border:1px solid #aab5bf; color:#263442; }}
+    .badge.ok {{ background:#e6f4ed; color:var(--green); }}
+    .badge.partial {{ background:#fff1d5; color:var(--amber); }}
+    .badge.failed {{ background:#fde7e7; color:var(--red); }}
+    .vehicle-link {{ color:var(--accent); font-weight:700; text-decoration:none; }}
+    .vehicle-link:hover {{ text-decoration:underline; }}
+    .vin {{ font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--muted); }}
+    .notice {{ margin-top:16px; padding:14px 16px; border-left:4px solid var(--amber); background:#fff8e9; }}
+    details {{ background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:11px 14px; margin:8px 0; }}
+    summary {{ cursor:pointer; font-weight:700; }}
+    .health-grid {{ display:grid; grid-template-columns:1.3fr .7fr 2fr; gap:10px; margin-top:10px; font-size:13px; }}
+    .downloads {{ margin-left:auto; display:flex; gap:10px; }}
+    .downloads a {{ color:var(--accent); }}
+    .empty {{ padding:40px; text-align:center; color:var(--muted); }}
+    @media (max-width:800px) {{ .cards {{ grid-template-columns:repeat(2,1fr); }} .downloads {{ width:100%; margin:0; }} .health-grid {{ grid-template-columns:1fr; }} }}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>2026 Honda Odyssey Elite</h1>
+    <p>Direct Washington dealership inventory, sorted by advertised price.</p>
+    <p class="muted" id="updated">Waiting for the first run.</p>
+  </header>
+  <section class="cards" aria-label="Inventory summary">
+    <div class="card"><strong id="total">0</strong><span>currently verified</span></div>
+    <div class="card"><strong id="white">0</strong><span>white</span></div>
+    <div class="card"><strong id="priced">0</strong><span>with advertised price</span></div>
+    <div class="card"><strong id="coverage">0/0</strong><span>dealers fully checked</span></div>
+  </section>
+  <section>
+    <div class="toolbar">
+      <label>Search<input id="search" type="search" placeholder="Dealer, color, VIN…"></label>
+      <label>Availability<select id="availability"><option value="">All</option></select></label>
+      <label>Sort<select id="sort"><option value="price">Price, low to high</option><option value="white">White first, then price</option><option value="dealer">Dealer</option><option value="newest">Newest listing</option></select></label>
+      <label class="check"><input id="whiteOnly" type="checkbox"> White only</label>
+      <label class="check"><input id="includeStale" type="checkbox"> Include unverified carryovers</label>
+      <span class="downloads"><a href="inventory.csv">CSV</a><a href="inventory.json">JSON</a></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Price</th><th>Color</th><th>Dealer</th><th>Availability</th><th>Stock / VIN</th><th>Listing</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="empty" class="empty" hidden>No matching vehicles in the current report.</div>
+    </div>
+  </section>
+  <div class="notice"><strong>Price warning:</strong> “Advertised price” is the number and label published by the dealer. It is not an out-the-door quote and may depend on financing, loyalty, military, college-graduate, trade-in, or other conditions. MSRP is kept separately. Verify the VIN, availability, mandatory accessories, documentation fee, and full out-the-door price with the dealer.</div>
+  <section>
+    <h2>Dealer coverage</h2>
+    <p class="muted">A zero is meaningful only when the dealer status is “checked.” Partial and failed dealers remain visible so missing inventory cannot masquerade as no inventory.</p>
+    <div id="health"></div>
+  </section>
+</main>
+<script id="inventory-data" type="application/json">{payload}</script>
+<script>
+  const state = JSON.parse(document.getElementById('inventory-data').textContent);
+  const vehicles = Object.values(state.vehicles || {{}});
+  const dealers = Object.values(state.dealers || {{}});
+  const money = value => value == null ? 'Price unavailable' : new Intl.NumberFormat('en-US', {{style:'currency',currency:'USD',maximumFractionDigits:0}}).format(value);
+  const when = value => value ? new Intl.DateTimeFormat('en-US', {{dateStyle:'medium',timeStyle:'short',timeZone:'America/Los_Angeles'}}).format(new Date(value)) : 'Never';
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[ch]);
+  document.getElementById('updated').textContent = state.generated_at ? `Updated ${{when(state.generated_at)}} Pacific` : 'Waiting for the first run.';
+  const current = vehicles.filter(v => v.verified_current);
+  document.getElementById('total').textContent = current.length;
+  document.getElementById('white').textContent = current.filter(v => v.is_white).length;
+  document.getElementById('priced').textContent = current.filter(v => v.advertised_price != null).length;
+  document.getElementById('coverage').textContent = `${{dealers.filter(d => d.status === 'ok').length}}/${{dealers.length}}`;
+
+  const availability = [...new Set(vehicles.map(v => v.availability).filter(Boolean))].sort();
+  const availabilitySelect = document.getElementById('availability');
+  availability.forEach(value => availabilitySelect.insertAdjacentHTML('beforeend', `<option>${{esc(value)}}</option>`));
+
+  function compare(a,b) {{
+    const mode = document.getElementById('sort').value;
+    const price = v => v.sort_price == null ? Number.MAX_SAFE_INTEGER : v.sort_price;
+    if (mode === 'white' && a.is_white !== b.is_white) return a.is_white ? -1 : 1;
+    if (mode === 'dealer') return (a.dealer_name || '').localeCompare(b.dealer_name || '') || price(a)-price(b);
+    if (mode === 'newest') return String(b.first_seen || '').localeCompare(String(a.first_seen || '')) || price(a)-price(b);
+    return price(a)-price(b) || (a.dealer_name || '').localeCompare(b.dealer_name || '');
+  }}
+
+  function renderRows() {{
+    const query = document.getElementById('search').value.trim().toLowerCase();
+    const whiteOnly = document.getElementById('whiteOnly').checked;
+    const includeStale = document.getElementById('includeStale').checked;
+    const availability = availabilitySelect.value;
+    const filtered = vehicles.filter(v => {{
+      if (!includeStale && !v.verified_current) return false;
+      if (whiteOnly && !v.is_white) return false;
+      if (availability && v.availability !== availability) return false;
+      if (query && !JSON.stringify(v).toLowerCase().includes(query)) return false;
+      return true;
+    }}).sort(compare);
+    document.getElementById('empty').hidden = filtered.length !== 0;
+    document.getElementById('rows').innerHTML = filtered.map(v => `
+      <tr class="${{v.verified_current ? '' : 'stale'}}">
+        <td><div class="price">${{money(v.advertised_price ?? v.msrp)}}</div>${{v.msrp ? `<div class="msrp">MSRP ${{money(v.msrp)}}</div>` : ''}}<div class="msrp">${{esc(v.price_label || (v.msrp ? 'MSRP only' : ''))}}</div></td>
+        <td>${{v.is_white ? '<span class="badge white">White</span><br>' : ''}}${{esc(v.exterior || 'Not stated')}}<div class="msrp">Interior: ${{esc(v.interior || 'not stated')}}</div></td>
+        <td><strong>${{esc(v.dealer_name)}}</strong><div class="muted">${{esc(v.dealer_city)}}, WA</div></td>
+        <td><span class="badge">${{esc(v.availability || 'Not stated')}}</span>${{v.verified_current ? '' : '<br><span class="badge partial">Not re-verified</span>'}}<div class="msrp">Last seen ${{esc(when(v.last_seen))}}</div></td>
+        <td>${{v.stock ? `#${{esc(v.stock)}}<br>` : ''}}<span class="vin">${{esc(v.vin || 'VIN unavailable')}}</span></td>
+        <td><a class="vehicle-link" href="${{esc(v.url)}}" target="_blank" rel="noopener">Dealer listing ↗</a><div class="msrp">First seen ${{esc(when(v.first_seen))}}</div></td>
+      </tr>`).join('');
+  }}
+  ['search','availability','sort','whiteOnly','includeStale'].forEach(id => document.getElementById(id).addEventListener('input', renderRows));
+  renderRows();
+
+  document.getElementById('health').innerHTML = dealers
+    .sort((a,b) => a.name.localeCompare(b.name))
+    .map(d => `<details><summary><span class="badge ${{esc(d.status)}}">${{d.status === 'ok' ? 'Checked' : esc(d.status)}}</span> ${{esc(d.name)}} · ${{d.vehicle_count || 0}} match(es)</summary><div class="health-grid"><span><strong>${{esc(d.city)}}, WA</strong><br><a href="${{esc(d.url)}}" target="_blank" rel="noopener">Dealer website ↗</a></span><span>Checked: ${{esc(when(d.checked_at))}}<br>Pages: ${{d.pages_checked || 0}}</span><span>Method: ${{esc(d.method || 'none')}}<br>${{esc(d.message || '')}}</span></div></details>`).join('');
+</script>
+</body>
+</html>
+"""
+
+
+def build_reports(docs_dir: str | Path, state: dict[str, Any]) -> None:
+    output = Path(docs_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    write_csv(output / "inventory.csv", state)
+    write_public_json(output / "inventory.json", state)
+    write_html(output / "index.html", state)
+    (output / ".nojekyll").touch()
+

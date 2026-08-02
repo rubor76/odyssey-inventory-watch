@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "odyssey-inventory-watch"
+version = "1.0.0"
+description = "Daily direct-dealer inventory tracker for 2026 Honda Odyssey Elite vehicles in Washington"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "lxml>=5.3,<7",
+  "playwright>=1.52,<2",
+]
+
+[project.scripts]
+odyssey-watch = "odyssey_watch.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["odyssey_watch*"]
+

@@ -1,0 +1,47 @@
+{
+  "target": {
+    "year": 2026,
+    "make": "Honda",
+    "model": "Odyssey",
+    "trim": "Elite",
+    "preferred_colors": ["Platinum White Pearl", "Platinum White", "White"]
+  },
+  "settings": {
+    "request_timeout_seconds": 25,
+    "browser_timeout_seconds": 35,
+    "pause_between_dealers_seconds": 1.5,
+    "stale_after_hours": 30,
+    "max_vehicle_pages_per_dealer": 40,
+    "user_agent": "OdysseyInventoryWatch/1.0 (personal vehicle search; one run daily)"
+  },
+  "dealers": [
+    {"id":"autonation-renton","name":"AutoNation Honda Renton","city":"Renton","url":"https://www.autonationhondarenton.com/"},
+    {"id":"capitol-city","name":"Capitol City Honda","city":"Olympia","url":"https://www.capitolcityhonda.com/"},
+    {"id":"hinshaws","name":"Hinshaw's Honda","city":"Auburn","url":"https://www.hinshawshonda.com/"},
+    {"id":"bellevue","name":"Honda Auto Center of Bellevue","city":"Bellevue","url":"https://www.bellevuehonda.com/"},
+    {"id":"bellingham","name":"Honda of Bellingham","city":"Bellingham","url":"https://www.hondaofbellingham.com/"},
+    {"id":"burien","name":"Rairdon's Honda of Burien","city":"Burien","url":"https://www.burienhonda.com/"},
+    {"id":"burlington","name":"Honda of Burlington","city":"Burlington","url":"https://hondaburlington.com/"},
+    {"id":"fife","name":"Honda of Fife","city":"Fife","url":"https://www.hondaoffife.com/"},
+    {"id":"kirkland","name":"Honda of Kirkland","city":"Kirkland","url":"https://www.kirklandhonda.com/"},
+    {"id":"marysville","name":"Rairdon's Honda of Marysville","city":"Marysville","url":"https://www.hondaofmarysville.com/"},
+    {"id":"seattle","name":"Honda of Seattle","city":"Seattle","url":"https://www.hondaofseattle.com/"},
+    {"id":"sumner","name":"Rairdon's Honda of Sumner","city":"Sumner","url":"https://www.hondaofsumner.com/"},
+    {"id":"interstate-chehalis","name":"Interstate Honda","city":"Chehalis","url":"https://www.interstatehondawa.com/"},
+    {"id":"klein","name":"Klein Honda","city":"Everett","url":"https://www.kleinhonda.com/"},
+    {"id":"lynnwood","name":"Lynnwood Honda","city":"Edmonds","url":"https://www.lynnwoodhonda.com/"},
+    {"id":"south-tacoma","name":"South Tacoma Honda","city":"Tacoma","url":"https://www.southtacomahonda.com/"},
+    {"id":"west-hills","name":"West Hills Honda","city":"Bremerton","url":"https://www.westhillshonda.com/"},
+    {"id":"wilder","name":"Wilder Honda","city":"Port Angeles","url":"https://www.wilderhonda.com/"},
+    {"id":"dick-hannah","name":"Dick Hannah Honda","city":"Vancouver","url":"https://www.dickhannahhonda.com/"},
+    {"id":"stirling","name":"Stirling Honda","city":"Longview","url":"https://www.stirlinghonda.com/"},
+    {"id":"apple-valley","name":"Apple Valley Honda","city":"East Wenatchee","url":"https://www.applevalleyhonda.com/"},
+    {"id":"bud-clary-moses-lake","name":"Bud Clary Honda of Moses Lake","city":"Moses Lake","url":"https://www.budclaryhondaofmoseslake.com/"},
+    {"id":"mccurley","name":"McCurley Honda","city":"Richland","url":"https://www.mccurleyhonda.com/"},
+    {"id":"harvest","name":"Harvest Honda","city":"Yakima","url":"https://www.harvesthondawa.com/"},
+    {"id":"underriner-walla-walla","name":"Underriner Honda of Walla Walla","city":"College Place","url":"https://www.underrinerhondaofwallawalla.com/"},
+    {"id":"findlay-spokane","name":"Findlay Honda Spokane","city":"Spokane","url":"https://www.findlayhondaspokane.com/"},
+    {"id":"autonation-spokane-valley","name":"AutoNation Honda Spokane Valley","city":"Spokane Valley","url":"https://www.autonationhondaspokanevalley.com/"}
+  ]
+}
+
